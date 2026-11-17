@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from app.models import InventoryItem
 
 # Initialize the FastAPI application
 app = FastAPI(
@@ -7,9 +8,35 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Fake in-memory database to store inventories (player_id -> list of items)
+fake_database: dict[str, list[InventoryItem]] = {}
+
+
 @app.get("/")
 async def root() -> dict:
-    """
-    Health check endpoint to verify the API is running.
-    """
+    """Health check endpoint."""
     return {"status": "online", "message": "Player Inventory API is running."}
+
+
+@app.post("/inventory/{player_id}/add")
+async def add_item(player_id: str, item: InventoryItem) -> dict:
+    """
+    Adds a new item to a player's inventory.
+    If the player doesn't exist, it creates a new inventory for them.
+    """
+    if player_id not in fake_database:
+        fake_database[player_id] = []
+
+    fake_database[player_id].append(item)
+    return {"status": "success", "message": f"Item '{item.name}' added to player {player_id}."}
+
+
+@app.get("/inventory/{player_id}")
+async def get_inventory(player_id: str) -> list[InventoryItem]:
+    """
+    Retrieves the full inventory of a specific player.
+    """
+    if player_id not in fake_database:
+        raise HTTPException(status_code=404, detail="Player inventory not found.")
+
+    return fake_database[player_id]
