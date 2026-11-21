@@ -40,3 +40,25 @@ async def get_inventory(player_id: str) -> list[InventoryItem]:
         raise HTTPException(status_code=404, detail="Player inventory not found.")
 
     return fake_database[player_id]
+
+
+@app.delete("/inventory/{player_id}/remove/{item_id}")
+async def remove_item(player_id: str, item_id: str) -> dict:
+    """
+    Removes a specific item from a player's inventory.
+    Demonstrates senior-level error handling.
+    """
+    # Tratamento de Erro 1: O jogador nem sequer existe
+    if player_id not in fake_database:
+        raise HTTPException(status_code=404, detail=f"Player '{player_id}' not found.")
+
+    # Procurar o item específico no inventário do jogador
+    inventory = fake_database[player_id]
+    for index, item in enumerate(inventory):
+        if item.item_id == item_id:
+            # Remove o item e retorna mensagem de sucesso
+            inventory.pop(index)
+            return {"status": "success", "message": f"Item '{item_id}' removed from player {player_id}."}
+
+    # Tratamento de Erro 2: O jogador existe, mas não tem este item
+    raise HTTPException(status_code=404, detail=f"Item '{item_id}' not found in player '{player_id}' inventory.")
